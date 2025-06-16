@@ -2,10 +2,13 @@ package com.amulya.books.controller;
 
 import com.amulya.books.entity.Book;
 import com.amulya.books.entity.request.BookRequest;
+import com.amulya.books.exception.BookErrorResponse;
+import com.amulya.books.exception.BookNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -76,7 +79,10 @@ public Book getBookByBookId(@PathVariable @Min(value = 1) int id){
         return books.stream()
                 .filter(book -> book.getId()==id)
                 .findFirst()
-                .orElse(null);
+//                .orElse(null);
+                .orElseThrow(
+                        () -> new BookNotFoundException("book not found at given id" + id)
+                );
 }
 
 
@@ -149,5 +155,15 @@ public Book getBookByBookId(@PathVariable @Min(value = 1) int id){
 
     private Book convertToBook(long id, BookRequest book){
         return new Book(id,book.getTitle(), book.getAuthor(), book.getCategory(),book.getRating());
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<BookErrorResponse> handlingMet(Exception excep){
+        BookErrorResponse bookErrorResponse = new BookErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                excep.getMessage(),
+                System.currentTimeMillis()
+        );
+        return new ResponseEntity<>(bookErrorResponse,HttpStatus.NOT_FOUND);
     }
 }
