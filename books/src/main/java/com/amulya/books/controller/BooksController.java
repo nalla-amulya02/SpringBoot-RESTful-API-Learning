@@ -1,6 +1,11 @@
 package com.amulya.books.controller;
 
 import com.amulya.books.entity.Book;
+import com.amulya.books.entity.request.BookRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -16,11 +21,13 @@ public class BooksController {
 
     public void initialize() {
         books.addAll(List.of(
-                new Book("t1", "a1", "c1"),
-                new Book("t2", "a2", "c2"),
-                new Book("t3", "a3", "c3")
+                new Book(1,"t1", "a1", "c1",3),
+                new Book(2,"t2", "a2", "c2",4),
+                new Book(3,"t3", "a3", "c3",2),
+                new Book(4,"t4", "a3", "c1",3)
 
-        ));
+
+                ));
     }
 
     public BooksController() {
@@ -39,13 +46,13 @@ public class BooksController {
     }
 
     //    path variables and parameters
-    @GetMapping("/api/books/{id}")
+    @GetMapping("/api/books/{id}")    // index
     public Book getBookById(@PathVariable int id) {
         return books.get(id);
     }
 
     //    localhost:8080/api/book/t1
-//    path variables -  to identify somethign very specific
+//    path variables -  to identify something very specific -old
     @GetMapping("/api/book/{title}")
     public Book getBookByTitle(@PathVariable String title) {
 //        for(Book book:books){
@@ -59,6 +66,18 @@ public class BooksController {
                 .findFirst()
                 .orElse(null);
     }
+
+
+
+//    creating a new bookrequest DTO and get book by id
+    @GetMapping("/api/books/{id}")
+    @ResponseStatus(HttpStatus.OK)
+public Book getBookByBookId(@PathVariable @Min(value = 1) int id){
+        return books.stream()
+                .filter(book -> book.getId()==id)
+                .findFirst()
+                .orElse(null);
+}
 
 
     //    query parameters -> key value filtering
@@ -83,7 +102,7 @@ public class BooksController {
         }
     }
 
-    //    post mapping
+    //    post mapping -old
     @PostMapping("/api/books")
     public void putBook(@RequestBody Book newBook) {
 //        for(Book b :books){
@@ -99,8 +118,17 @@ public class BooksController {
         }
     }
 
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/api/books")
+    public void putBookByBookRequest(@Valid @RequestBody BookRequest bookreq){    //new with DTO
+        long id = books.isEmpty()?1:(books.get(books.size()-1).getId()+1);
+        books.add(convertToBook(id,bookreq));
+    }
+
+
 //    put request
 //pass a path variable to identify the item you are updating and the request body to which it has to be updated
+    @ResponseStatus(HttpStatus.CREATED)
     @PutMapping("/api/books/{title}")
     public void updateBooks(@PathVariable String title, @RequestBody Book updatedBook){
         for(int i =0; i< books.size() ;i++){
@@ -111,8 +139,15 @@ public class BooksController {
         }
     }
 //delete request -> pass the path variable to identify the record to delete
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/api/books/{title}")
-    public void deleteBook(@PathVariable  String title){
+    public void deleteBook(@PathVariable @Size(min = 1,max = 30) String title){
         books.removeIf(book -> book.getTitle().equalsIgnoreCase(title));
+    }
+
+
+
+    private Book convertToBook(long id, BookRequest book){
+        return new Book(id,book.getTitle(), book.getAuthor(), book.getCategory(),book.getRating());
     }
 }
